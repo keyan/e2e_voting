@@ -21,21 +21,21 @@ class Election:
         self.proof_server = proof_server.ProofServer(rows=num_proof_srv_rows)
         self.voters = [voter.Voter() for _ in range(num_voters)]
         self.tablets = [tablet.Tablet(srv=self.proof_server) for _ in range(num_tablets)]
-        
+
     def run(self):
         print('Running election...')
         for v in self.voters:
             t = self._get_tablet()
-            v.vote(t)
-            
+            v.do_vote(t)
+
         # End the election and mix votes
         self.proof_server.mix_votes()
-        
+
         # Verify election results for each voter
         for v in self.voters:
             if not v.verify(self.sbb):
                 print('Das nicht gut')
-        
+
     def _get_tablet(self) -> tablet.Tablet:
         """
         Select random tablet and return it

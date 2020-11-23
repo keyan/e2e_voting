@@ -9,24 +9,23 @@ class Tablet:
         self._create_secret_key()
         self._register_with_srv()
         self._proof_srv_rows = srv.get_num_rows()
-    
+
     def _generate_id(self):
         self._id = ''
-        
+
     def _create_secret_key(self):
         self._secret_key = ''
-        
+
     def _register_with_srv(self):
         # TODO: encrypt secret key with public key
         enc = self._secret_key
         self._srv.register_tablet(self._id, enc)
-    
-    def send_vote(self, vote):
+
+    def send_vote(self, vote: sv_vote.SVVote):
         # TODO: generate bid and get vote hash
         bid = ''
         hash = ''
-        v = sv_vote.SVVote()
-        self._srv.handle_vote(v)
-        
+        self._srv.handle_vote(vote)
+
         # return bid and hash
         return bid, hash

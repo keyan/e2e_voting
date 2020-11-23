@@ -5,7 +5,7 @@ class ProofServer:
     def __init__(self, rows: int):
         self._generate_key_pair()
         self._rows = rows
-        
+
     #
     # Proof server initialization
     #
@@ -18,10 +18,10 @@ class ProofServer:
     #
     def register_tablet(self, tablet_id: str, pk_encrypted_sk):
         pass
-    
+
     def get_public_key(self):
         return self._public_key
-    
+
     def get_num_rows(self) -> int:
         return self._rows
 
@@ -37,5 +37,5 @@ class ProofServer:
     def mix_votes(self):
         pass
 
-    
-    
+
+

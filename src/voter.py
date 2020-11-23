@@ -11,5 +11,5 @@ class Voter:
     def vote(self, tablet: Tablet):
         self.bid, self.ballot_hash = tablet.send_vote(self.vote)
 
-    def verify(self, sbb: SBB) -> True:
+    def verify(self, sbb: SBB) -> bool:
         return True

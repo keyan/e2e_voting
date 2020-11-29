@@ -15,12 +15,13 @@ class Election:
         num_tablets: int = 3,
         num_proof_srv_rows: int = 3,
     ):
+        # M should be prime
         self.M = M
         self.twoM = twoM
         self.sbb = sbb.SBB()
         self.proof_server = proof_server.ProofServer(rows=num_proof_srv_rows)
         self.voters = [voter.Voter() for _ in range(num_voters)]
-        self.tablets = [tablet.Tablet(srv=self.proof_server) for _ in range(num_tablets)]
+        self.tablets = [tablet.Tablet(srv=self.proof_server, M=self.M) for _ in range(num_tablets)]
 
     def run(self):
         print('Running election...')

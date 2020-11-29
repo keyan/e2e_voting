@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 from src import sv_vote
 
 from cryptography.fernet import Fernet
@@ -11,9 +13,9 @@ class ProofServer:
     def __init__(self, rows: int):
         self._generate_key_pair()
         self._rows = rows
-        self._tablet_decoders = {}
-        self._incoming_vote_rows = []
-        
+        self._tablet_decoders: Dict[str, Fernet] = {}
+        self._incoming_vote_rows: List[List[sv_vote.SVVote]] = []
+
         for _ in range(self._rows):
             self._incoming_vote_rows.append([])
 
@@ -52,6 +54,8 @@ class ProofServer:
         return self._rows
 
     def handle_vote(self, sv_vote: sv_vote.SVVote):
+        if sv_vote.proof_server_row is None:
+            raise Exception('Cannot handle vote without valid proof_server_row')
         self._incoming_vote_rows[sv_vote.proof_server_row].append(sv_vote)
 
     #

@@ -28,7 +28,7 @@ optional arguments:
 For example:
 ```
 # Automated simulation mode
-python3 -m src.main
+make run
 
 # Interactive mode
 python3 -m src.main -i

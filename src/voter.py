@@ -8,7 +8,7 @@ class Voter:
         self.ballot_hash = None
         self.bid = None
         # TODO: actually create a valid vote
-        self.vote = SVVote()
+        self.vote = 0
 
     def do_vote(self, tablet: Tablet):
         self.bid, self.ballot_hash = tablet.send_vote(self.vote)

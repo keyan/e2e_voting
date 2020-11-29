@@ -1,20 +1,29 @@
 import json
 import os
 import uuid
+from typing import Tuple
+
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 
 from src import proof_server
+from src import sbb
 from src import sv_vote
 from src import util
 
 
 class Tablet:
-    def __init__(self, srv: proof_server.ProofServer, M: int):
+    def __init__(
+        self,
+        srv: proof_server.ProofServer,
+        M: int,
+        sbb: sbb.SBB,
+    ):
         self._srv = srv
         self._M = M
+        self._sbb = sbb
         self._generate_id()
         self._create_secret_key()
         self._register_with_srv()
@@ -51,7 +60,7 @@ class Tablet:
     #
     # Voting-related code
     #
-    def send_vote(self, vote_int: int):
+    def send_vote(self, vote_int: int) -> Tuple[bytes, str]:
         assert vote_int < self._M
 
         # TODO: use string votes and prime number generation?
@@ -85,6 +94,9 @@ class Tablet:
             vote.com_u = com_u
             vote.com_v = com_v
 
+            # Each commitment for each component of the ballot must be posted to SBB.
+            self._sbb.add_ballot_svr_commitment(com_u, com_v)
+
             # Store the commitments in the receipt. Need to use int for it to be json serializable
             receipt['commitments'][row] = {'u': util.bytes_to_bigint(com_u), 'v': util.bytes_to_bigint(com_v)}
 
@@ -102,4 +114,7 @@ class Tablet:
         # Hash the receipt and return to the voter
         receipt_str = json.dumps(receipt, sort_keys=True)
         receipt_hash = util.get_hash(receipt_str.encode())
+
+        self._sbb.add_ballot_receipt(receipt['bid'], receipt_hash)
+
         return bid, receipt_hash

@@ -30,7 +30,7 @@ def get_SV(x: int, M: int) -> Tuple[int, int]:
     u = rand_int % M
     v = (x - u) % M
 
-    assert (v + u) % M == x
+    assert val(u, v, M) == x
     return u, v
 
 
@@ -50,10 +50,10 @@ def get_SV_multiple(x, n, M):
     return split
 
 
-def get_hash(byte_list: bytes):
+def get_hash(byte_list: bytes) -> str:
     digest = hashes.Hash(algorithm=hashes.SHA256(), backend=default_backend())
     digest.update(byte_list)
-    return digest.finalize()
+    return digest.finalize().hex()
 
 
 def get_COM(K: bytes, u: bytes):
@@ -65,3 +65,7 @@ def get_COM(K: bytes, u: bytes):
     h = hmac.HMAC(K, hashes.SHA256(), backend=default_backend())
     h.update(u)
     return h.finalize()
+
+
+def val(u: int, v: int, M: int) -> int:
+    return (u + v) % M

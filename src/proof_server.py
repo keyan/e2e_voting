@@ -1,6 +1,8 @@
 from typing import Dict, List
 
 from src import sv_vote
+from src import sbb
+from src import util
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -10,8 +12,16 @@ from cryptography.hazmat.primitives.asymmetric import padding
 
 
 class ProofServer:
-    def __init__(self, rows: int):
+    """
+    ProofServer (henceforth PS), abtracts a mix-net of NxN servers arranged in a matrix.
+    The function of the PS is to obfuscate and shuffle split-value-representations of
+    ballots before posting to the SBB.
+    """
+    def __init__(self, twoM: int, rows: int, sbb: sbb.SBB):
+        self._twoM = twoM
+        self._sbb = sbb
         self._generate_key_pair()
+        # We implicitly let rows == columns.
         self._rows = rows
         self._tablet_decoders: Dict[str, Fernet] = {}
         self._incoming_vote_rows: List[List[sv_vote.SVVote]] = []
@@ -19,10 +29,20 @@ class ProofServer:
         for _ in range(self._rows):
             self._incoming_vote_rows.append([])
 
-    #
-    # Proof server initialization
-    #
+        # Only set after mixing is initiated.
+        self._num_votes: int = 0
+
     def _generate_key_pair(self):
+        """
+        Generate a RSA public/private key-pair once at initialization.
+
+        The public key is provided to each tablet when they register with the proof server,
+        allowing the tablet to securely share their private symmetric key.
+
+        TODO - consider giving all mix-servers their own keys.
+        In the paper each mix-server in the PS has its own key-pair, but for now we relax this
+        requirement for the sake of simplifying the PS implementation.
+        """
         self._private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         self._public_key = self._private_key.public_key()
         self._public_key_bytes = self._public_key.public_bytes(
@@ -34,6 +54,11 @@ class ProofServer:
     # Public proof server functions/endpoints
     #
     def register_tablet(self, tablet_id: str, pk_encrypted_sk):
+        """
+        Each initialized tablet must call this function in order to securely
+        share its private symmetric key with the PS. This allows for secure
+        ballot transmission later.
+        """
         try:
             tablet_secret_key = self._private_key.decrypt(
                 pk_encrypted_sk,
@@ -45,7 +70,7 @@ class ProofServer:
             )
             self._tablet_decoders[tablet_id] = Fernet(tablet_secret_key)
         except Exception as e:
-            print("Tablet failed to register: %s" % e)
+            raise Exception('Tablet failed to register', e)
 
     def get_public_key(self):
         return self._public_key_bytes

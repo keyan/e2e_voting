@@ -35,7 +35,7 @@ class Tablet:
     def _create_secret_key(self):
         # Generate the secret key and encoder so that it doesn't need to be created for every vote.
         self._secret_key = Fernet.generate_key()
-        self._encoder = Fernet(self._secret_key)
+        self._encoder: Fernet = Fernet(self._secret_key)
 
     def _register_with_srv(self):
         # Get the public key from the server and load into a usable key object

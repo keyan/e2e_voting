@@ -3,6 +3,8 @@ import json
 # Define SBB headings used to later parse the SBB during proof.
 BALLOT_RECEIPTS = 'ballot_receipts'
 COMMITMENTS = 'commitments'
+VOTE_LIST = 'vote_list'
+END_SECTION = 'end_section'
 
 class SBB:
     """
@@ -41,7 +43,15 @@ class SBB:
         self._db.write(BALLOT_RECEIPTS + '\n')
         for receipt in self._ballot_receipts:
             self._db.write(receipt + '\n')
+        self._db.write(END_SECTION + '\n')
 
         self._db.write(COMMITMENTS + '\n')
         for com in self._svr_commitments:
             self._db.write(com + '\n')
+        self._db.write(END_SECTION + '\n')
+
+    def post_start_of_vote_list(self) -> None:
+        """
+        Called when the PS begins to post a vote list (one of 2m total).
+        """
+        self._db.write(VOTE_LIST + '\n')

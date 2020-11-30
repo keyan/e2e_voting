@@ -19,7 +19,7 @@ def parse_cmd_line(args):
         '-v', '--voters',
         action='store',
         dest='num_voters',
-        default=None,
+        default=3,
         type=int,
         help='number of voters to use, set randomly if not specified',
     )
@@ -31,6 +31,5 @@ if __name__ == '__main__':
     parsed = parse_cmd_line(sys.argv[1:])
     if parsed.interactive:
         print('Interactive mode not implemented yet')
-        pass
     else:
-        election.Election().run()
+        election.Election(num_voters=parsed.num_voters).run()

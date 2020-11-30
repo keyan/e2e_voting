@@ -1,5 +1,5 @@
 import os
-from typing import Tuple
+from typing import List, Tuple
 
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.backends import default_backend
@@ -34,8 +34,11 @@ def get_SV(x: int, M: int) -> Tuple[int, int]:
     return u, v
 
 
-def get_SV_multiple(x, n, M):
-    split = []
+def get_SV_multiple(x: int, n: int, M: int) -> List[int]:
+    """
+    Return a random SVRs of the value `x` with `n` components.
+    """
+    split: List[int] = []
     for _ in range(n-1):
         rand_bytes = os.urandom(16)
         rand_int = bytes_to_bigint(rand_bytes)

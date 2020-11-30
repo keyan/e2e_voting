@@ -206,16 +206,21 @@ class ProofServer:
 
         # Post lists of votes - last column creates and posts SVR commitments for
         # each value in the array of ballot components it contains.
-        com_t: List[Dict[str, Dict[str, str]]] = [{} for _ in range(self._num_votes)]
+        com_t: List[Dict[int, Dict[str, int]]] = [{} for _ in range(self._num_votes)]
+        round_commitments: List[List[sv_vote.PlaintextSVR]] = []
         for row in range(self._rows):
             commitment_array: List[sv_vote.PlaintextSVR] = []
             for i, comp_val in enumerate(row_values[row]):
                 svr = util.get_SVR(comp_val, self._M)
+                commitment_array.append(svr)
                 com_u = util.get_COM(svr.k1, svr.u)
                 com_v = util.get_COM(svr.k2, svr.v)
-                # com_t[i][row] = {'com_u': com_u, 'com_v': com_v}
+                com_t[i][row] = {'com_u': com_u, 'com_v': com_v}
 
-            # self._commitment_arrays.append()
+            round_commitments.append(commitment_array)
+
+        self._sbb.post_one_mixnet_output_list(com_t)
+        self._commitment_arrays.append(round_commitments)
 
     def mix_votes(self) -> None:
         """
@@ -226,10 +231,16 @@ class ProofServer:
         2m lists posted to the SBB.
         """
         self._validate_stored_votes()
-        # self._sbb.post_start_of_vote_list()
 
         print('Mixing votes...')
         for _ in range(self._twoM):
             self._mix_round()
 
+        self._sbb.post_end_section()
+
+        # Validation of PS state that we need to reconstruct original ballot
+        # order and to open `m` commitments later.
         assert len(self._permutation_arrays) == self._twoM
+        assert len(self._permutation_arrays[0]) == self._num_votes
+        assert len(self._commitment_arrays) == self._twoM
+        assert len(self._commitment_arrays[0]) == self._num_votes

@@ -12,7 +12,7 @@ class Election:
         self,
         num_voters: int,
         M: int = 5,
-        twoM: int = 24,
+        twoM: int = 2,
         num_tablets: int = 3,
         num_proof_srv_rows: int = 3,
     ):

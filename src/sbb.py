@@ -51,8 +51,18 @@ class SBB:
             self._db.write(com + '\n')
         self._db.write(END_SECTION + '\n')
 
-    def post_start_of_vote_list(self) -> None:
+    def post_one_mixnet_output_list(self, com_t: List[Dict[int, Dict[str, int]]]) -> None:
         """
-        Called when the PS begins to post a vote list (one of 2m total).
+        Called once for each of the 2m lists posted after mixing.
+
+        For a 3 component SVR:
+            ComT = (ComSV(X), ComSV(Y), ComSV(Z))
+
+        There are N of these commitments, one per vote. Instead of x/y/z we use row
+        indices so that arbitrary sized mix-nets can be used.
         """
         self._db.write(VOTE_LIST + '\n')
+        self._db.write(json.dumps(com_t) + '\n')
+
+    def post_end_section(self) -> None:
+        self._db.write(END_SECTION + '\n')

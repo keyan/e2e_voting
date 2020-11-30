@@ -1,5 +1,5 @@
 import random
-from typing import Dict, List, Tuple
+from typing import Dict, List, Set, Tuple
 
 from src import sv_vote
 from src import sbb
@@ -101,9 +101,15 @@ class ProofServer:
             raise Exception('Cannot handle vote without valid proof_server_row')
         self._incoming_vote_rows[sv_vote.proof_server_row].append(sv_vote)
 
-    def publish_vote_consistency_proof(self) -> None:
+    def publish_vote_consistency_proof(self, proof_lists: Set[int]) -> None:
         """
         Step #7 from Section I.
+        """
+        pass
+
+    def publish_election_outcome(self, outcome_lists: Set[int]) -> None:
+        """
+        Step #8 from Section I.
         """
         pass
 

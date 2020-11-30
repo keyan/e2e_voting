@@ -60,7 +60,7 @@ class Tablet:
     #
     # Voting-related code
     #
-    def send_vote(self, vote_int: int) -> Tuple[bytes, str]:
+    def send_vote(self, vote_int: int) -> Tuple[int, str]:
         assert vote_int < self._M
 
         # TODO: use string votes and prime number generation?
@@ -107,4 +107,4 @@ class Tablet:
 
         self._sbb.add_ballot_receipt(bid_int, receipt_hash)
 
-        return bid, receipt_hash
+        return bid_int, receipt_hash

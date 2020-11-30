@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import Dict, List
 
 # Define SBB headings used to later parse the SBB during proof.
 BALLOT_RECEIPTS = 'ballot_receipts'
@@ -25,7 +25,7 @@ class SBB:
         """
         self._ballot_receipts.append(json.dumps({'bid': bid, 'receipt': receipt_str}, sort_keys=True))
 
-    def add_ballot_svr_commitment(self, com_u: bytes, com_v: bytes) -> None:
+    def add_ballot_svr_commitment(self, com_u: int, com_v: int) -> None:
         """
         Add a component of a ballot SVR to local receipt list, these are posted in bulk later.
 
@@ -33,7 +33,7 @@ class SBB:
         verification in the proof step.
         """
         self._svr_commitments.append(json.dumps(
-            {'com_u': com_u.hex(), 'com_v': com_v.hex()},
+            {'com_u': com_u, 'com_v': com_v},
             sort_keys=True,
         ))
 

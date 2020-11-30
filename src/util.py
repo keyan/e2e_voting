@@ -7,7 +7,7 @@ from cryptography.hazmat.backends import default_backend
 from src import sv_vote
 
 
-def bytes_to_bigint(byte_list: bytes):
+def bytes_to_bigint(byte_list: bytes) -> int:
     return int.from_bytes(byte_list, byteorder='little', signed=False)
 
 
@@ -75,7 +75,7 @@ def get_hash(byte_list: bytes) -> str:
     return digest.finalize().hex()
 
 
-def get_COM(K: bytes, u: bytes):
+def get_COM(K: bytes, u: bytes) -> int:
     """
     Commits the value u and is computationally hiding.
     To open the commitment, run this again and compare the values.
@@ -83,7 +83,7 @@ def get_COM(K: bytes, u: bytes):
     """
     h = hmac.HMAC(K, hashes.SHA256(), backend=default_backend())
     h.update(u)
-    return h.finalize()
+    return bytes_to_bigint(h.finalize())
 
 
 def val(u: int, v: int, M: int) -> int:

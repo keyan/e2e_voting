@@ -68,10 +68,8 @@ class Tablet:
         bid = os.urandom(32)
 
         # Voter gets a hash of the receipt at the end, which contains the ballot ID and the commitments.
-        receipt = {
-            'bid': util.bytes_to_bigint(bid),
-            'commitments': {}
-        }
+        bid_int = util.bytes_to_bigint(bid)
+        receipt = {}
 
         # These are the x, y, z from w = (x, y, z) mod M in the paper
         split_vote = util.get_SV_multiple(vote_int, self._proof_srv_rows, self._M)
@@ -83,16 +81,14 @@ class Tablet:
 
             # Create the commitment and set it on the vote. Together com_u and com_v make up ComSV in the paper
             plaintext_svr = util.get_SVR(val, self._M)
-            com_u = util.get_COM(plaintext_svr.k1, plaintext_svr.u)
-            com_v = util.get_COM(plaintext_svr.k2, plaintext_svr.v)
-            vote.com_u = com_u
-            vote.com_v = com_v
+            vote.com_u = util.get_COM(plaintext_svr.k1, plaintext_svr.u)
+            vote.com_v = util.get_COM(plaintext_svr.k2, plaintext_svr.v)
 
             # Each commitment for each component of the ballot must be posted to SBB.
-            self._sbb.add_ballot_svr_commitment(com_u, com_v)
+            self._sbb.add_ballot_svr_commitment(vote.com_u, vote.com_v)
 
             # Store the commitments in the receipt. Need to use int for it to be json serializable
-            receipt['commitments'][row] = {'u': util.bytes_to_bigint(com_u), 'v': util.bytes_to_bigint(com_v)}
+            receipt[row] = {'u': vote.com_u, 'v': vote.com_v}
 
             # Encode the values (this is done as a concatenation in the paper, however it is easier to decode this way)
             enc = sv_vote.EncCom()
@@ -109,6 +105,6 @@ class Tablet:
         receipt_str = json.dumps(receipt, sort_keys=True)
         receipt_hash = util.get_hash(receipt_str.encode())
 
-        self._sbb.add_ballot_receipt(receipt['bid'], receipt_hash)
+        self._sbb.add_ballot_receipt(bid_int, receipt_hash)
 
         return bid, receipt_hash

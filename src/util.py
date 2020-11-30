@@ -4,6 +4,8 @@ from typing import List, Tuple
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.backends import default_backend
 
+from src import sv_vote
+
 
 def bytes_to_bigint(byte_list: bytes):
     return int.from_bytes(byte_list, byteorder='little', signed=False)
@@ -19,6 +21,20 @@ def bigint_to_bytes(bigint: int):
             break
 
     return bigint.to_bytes(size, byteorder='little', signed=False)
+
+
+def get_SVR(x: int, M: int) -> sv_vote.PlaintextSVR:
+    """
+    Return a randomized SVR with keys necessary to commit to the SVR.
+    """
+    # Generate 2 random keys for the split-value representation
+    K1 = os.urandom(16)
+    K2 = os.urandom(16)
+
+    u, v = get_SV(x, M)
+    u_bytes = bigint_to_bytes(u)
+    v_bytes = bigint_to_bytes(v)
+    return sv_vote.PlaintextSVR(k1=K1, k2=K2, u=u_bytes, v=v_bytes)
 
 
 def get_SV(x: int, M: int) -> Tuple[int, int]:

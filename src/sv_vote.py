@@ -3,10 +3,10 @@ from typing import Optional
 from cryptography.fernet import Fernet
 
 
-class PlaintextCom:
+class PlaintextSVR:
     """
-    PlaintextCom represents one plaintext commitment to a SVR tuple (u, v)
-    and the plaintext encryption keys used to make the commitment.
+    PlaintextSVR represents one SVR tuple (u, v) and the keys
+    encryption keys used to make a commitment to this SVR.
     """
     def __init__(self, k1: bytes, k2: bytes, u: bytes, v: bytes):
         self.k1 = k1
@@ -26,13 +26,13 @@ class EncCom:
         self.u: bytes = None
         self.v: bytes = None
 
-    def decode(self, decoder: Fernet) -> PlaintextCom:
+    def decode(self, decoder: Fernet) -> PlaintextSVR:
         k1 = decoder.decrypt(self.k1)
         k2 = decoder.decrypt(self.k2)
         u = decoder.decrypt(self.u)
         v = decoder.decrypt(self.v)
 
-        return PlaintextCom(k1, k2, u, v)
+        return PlaintextSVR(k1, k2, u, v)
 
 
 class SVVote:

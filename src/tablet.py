@@ -81,16 +81,10 @@ class Tablet:
             vote.tablet_id = self._id
             vote.proof_server_row = row
 
-            # Generate 2 random keys for the split-value representation
-            K1 = os.urandom(16)
-            K2 = os.urandom(16)
-
             # Create the commitment and set it on the vote. Together com_u and com_v make up ComSV in the paper
-            u, v = util.get_SV(val, self._M)
-            u_bytes = util.bigint_to_bytes(u)
-            v_bytes = util.bigint_to_bytes(v)
-            com_u = util.get_COM(K1, u_bytes)
-            com_v = util.get_COM(K2, v_bytes)
+            plaintext_svr = util.get_SVR(val, self._M)
+            com_u = util.get_COM(plaintext_svr.k1, plaintext_svr.u)
+            com_v = util.get_COM(plaintext_svr.k2, plaintext_svr.v)
             vote.com_u = com_u
             vote.com_v = com_v
 
@@ -102,10 +96,10 @@ class Tablet:
 
             # Encode the values (this is done as a concatenation in the paper, however it is easier to decode this way)
             enc = sv_vote.EncCom()
-            enc.k1 = self._encoder.encrypt(K1)
-            enc.k2 = self._encoder.encrypt(K2)
-            enc.u = self._encoder.encrypt(u_bytes)
-            enc.v = self._encoder.encrypt(v_bytes)
+            enc.k1 = self._encoder.encrypt(plaintext_svr.k1)
+            enc.k2 = self._encoder.encrypt(plaintext_svr.k2)
+            enc.u = self._encoder.encrypt(plaintext_svr.u)
+            enc.v = self._encoder.encrypt(plaintext_svr.v)
             vote.enc = enc
 
             # Send one vote per row to the proof servers

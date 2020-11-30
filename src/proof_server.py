@@ -42,6 +42,14 @@ class ProofServer:
         #   - list[i][j] " " for the j'th column
         self._permutation_arrays: List[List[List[int]]] = []
 
+        # Keep state for each commitment made to ComT SVRs for each row in each
+        # iteration of mixing (2m total iterations). This is used to open `m`
+        # of the commitments in each row during step #7 "Proving consistency
+        # with cast votes" (Section I).
+        #   - list[i] contains the commitments used during round i of mixing
+        #   - list[i][j] " " for the last column of the j'th row
+        self._commitment_arrays: List[List[List[sv_vote.PlaintextSVR]]] = []
+
     def _generate_key_pair(self):
         """
         Generate a RSA public/private key-pair once at initialization.
@@ -143,14 +151,14 @@ class ProofServer:
 
             for vote in votes:
                 decoder = self._tablet_decoders[vote.tablet_id]
-                plaintext_com: sv_vote.PlaintextCom = vote.enc.decode(decoder)
-                if (util.get_COM(plaintext_com.k1, plaintext_com.u) != vote.com_u or
-                    util.get_COM(plaintext_com.k2, plaintext_com.v) != vote.com_v):
+                plaintext_svr: sv_vote.PlaintextSVR = vote.enc.decode(decoder)
+                if (util.get_COM(plaintext_svr.k1, plaintext_svr.u) != vote.com_u or
+                    util.get_COM(plaintext_svr.k2, plaintext_svr.v) != vote.com_v):
                     raise Exception('Commitment validation failed')
 
                 component_value = util.val(
-                    util.bytes_to_bigint(plaintext_com.u),
-                    util.bytes_to_bigint(plaintext_com.v),
+                    util.bytes_to_bigint(plaintext_svr.u),
+                    util.bytes_to_bigint(plaintext_svr.v),
                     self._M,
                 )
                 vote_components.append(component_value)
@@ -198,8 +206,16 @@ class ProofServer:
 
         # Post lists of votes - last column creates and posts SVR commitments for
         # each value in the array of ballot components it contains.
+        com_t: List[Dict[str, Dict[str, str]]] = [{} for _ in range(self._num_votes)]
         for row in range(self._rows):
-            pass
+            commitment_array: List[sv_vote.PlaintextSVR] = []
+            for i, comp_val in enumerate(row_values[row]):
+                svr = util.get_SVR(comp_val, self._M)
+                com_u = util.get_COM(svr.k1, svr.u)
+                com_v = util.get_COM(svr.k2, svr.v)
+                # com_t[i][row] = {'com_u': com_u, 'com_v': com_v}
+
+            # self._commitment_arrays.append()
 
     def mix_votes(self) -> None:
         """
@@ -210,7 +226,9 @@ class ProofServer:
         2m lists posted to the SBB.
         """
         self._validate_stored_votes()
+        # self._sbb.post_start_of_vote_list()
 
+        print('Mixing votes...')
         for _ in range(self._twoM):
             self._mix_round()
 

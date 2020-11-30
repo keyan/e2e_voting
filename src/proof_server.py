@@ -34,6 +34,14 @@ class ProofServer:
         # Only set after mixing is initiated.
         self._num_votes: int = 0
 
+        # Keep state for each permutation array used for each column in each
+        # iteration of mixing (2m total iterations). This is used to recompute
+        # the original ballot order for step #7 "Proving consistency with cast
+        # votes" (Section I).
+        #   - list[i] contains the permutations used during round i of mixing
+        #   - list[i][j] " " for the j'th column
+        self._permutation_arrays: List[List[List[int]]] = []
+
     def _generate_key_pair(self):
         """
         Generate a RSA public/private key-pair once at initialization.
@@ -85,12 +93,15 @@ class ProofServer:
             raise Exception('Cannot handle vote without valid proof_server_row')
         self._incoming_vote_rows[sv_vote.proof_server_row].append(sv_vote)
 
+    def publish_vote_consistency_proof(self) -> None:
+        """
+        Step #7 from Section I.
+        """
+        pass
+
     #
     # Proof server mixing implementation
     #
-    def _publish_proof(self) -> None:
-        pass
-
     def _validate_stored_votes(self) -> None:
         """
         Check that stored vote counts are consistent.
@@ -100,7 +111,7 @@ class ProofServer:
         assert len(num_votes) == 1, 'All rows should have equal number of votes'
         self._num_votes = num_votes.pop()
 
-    def _mix_round(self, iteration: int) -> None:
+    def _mix_round(self) -> None:
         """
         Run one round of randomized vote mixing.
 
@@ -118,6 +129,9 @@ class ProofServer:
         # after each stage of obfuscation+shuffling the list represents the current
         # state of the row.
         row_values: List[List[int]] = []
+
+        # Keep all 3 permutation arrays used to add to state later.
+        permutation_arrays: List[List[int]] = []
 
         # Decryption - each server in the first column must decrypt the encrypted
         # SVR component for all votes given to it, and confirm it matches the provided
@@ -152,13 +166,14 @@ class ProofServer:
             # communication between the servers.
             pi = list(range(self._num_votes))
             random.shuffle(pi)
+            permutation_arrays.append(pi)
 
             # An obfuscation is a tuple (p, q, r) where (p + q + r) mod M = 0,
             # for each vote. And shares these with the other rows. These are
             # used to obfuscate the vote components by computing, e.g.
             # x' = (p + x) mod M. Note the new value of (x', y', z') is
             # still equal to the original vote.
-            obfuscation_tuples: List[Tuple[int]] = [
+            obfuscation_tuples: List[List[int]] = [
                 util.get_SV_multiple(0, self._rows, self._M)
                 for _ in range(self._num_votes)
             ]
@@ -179,6 +194,8 @@ class ProofServer:
                 # the latest component values states are kept in this list.
                 row_values[row][:] = [obfuscated_components[i] for i in pi]
 
+        self._permutation_arrays.append(permutation_arrays)
+
         # Post lists of votes - last column creates and posts SVR commitments for
         # each value in the array of ballot components it contains.
         for row in range(self._rows):
@@ -194,5 +211,7 @@ class ProofServer:
         """
         self._validate_stored_votes()
 
-        for iteration in range(self._twoM):
-            self._mix_round(iteration)
+        for _ in range(self._twoM):
+            self._mix_round()
+
+        assert len(self._permutation_arrays) == self._twoM

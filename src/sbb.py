@@ -1,4 +1,5 @@
 import json
+from typing import List
 
 # Define SBB headings used to later parse the SBB during proof.
 BALLOT_RECEIPTS = 'ballot_receipts'

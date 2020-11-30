@@ -56,6 +56,7 @@ class Election:
 
         # Step 5
         # End the election and mix votes.
+        print('Mixing votes...')
         self.proof_server.mix_votes()
 
         # Step 6

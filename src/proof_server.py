@@ -238,7 +238,6 @@ class ProofServer:
         """
         self._validate_stored_votes()
 
-        print('Mixing votes...')
         for _ in range(self._twoM):
             self._mix_round()
 

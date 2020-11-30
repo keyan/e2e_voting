@@ -8,3 +8,6 @@ __pycache__
 .*.swp
 .idea/
 venv/
+
+# May want to include this at some point as an example.
+sbb.txt

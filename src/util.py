@@ -1,10 +1,17 @@
 import os
+from dataclasses import dataclass
 from typing import List, Tuple
 
 from cryptography.hazmat.primitives import hashes, hmac
 from cryptography.hazmat.backends import default_backend
 
 from src import sv_vote
+
+
+@dataclass
+class ComSV:
+    com_u: int
+    com_v: int
 
 
 def bytes_to_bigint(byte_list: bytes) -> int:

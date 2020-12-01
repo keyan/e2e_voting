@@ -109,9 +109,26 @@ class ProofServer:
 
     def publish_election_outcome(self, outcome_lists: Set[int]) -> None:
         """
+        Publishes fully decrypted but still shuffled votes from all m
+        of the outcome_lists provided to the SBB.
+
         Step #8 from Section I.
         """
-        pass
+        self._sbb.post_start_election_outcome_proof()
+
+        list_indices = sorted(list(outcome_lists))
+        for list_idx in list_indices:
+            svrs: List[List[Dict[str, int]]] = [[] for _ in range(self._num_votes)]
+            for row, row_svrs in enumerate(self._commitment_arrays[list_idx]):
+                for vote_idx, svr in enumerate(row_svrs):
+                    svrs[vote_idx].append({
+                        'u': util.bytes_to_bigint(svr.u),
+                        'v': util.bytes_to_bigint(svr.v),
+                        'k1': util.bytes_to_bigint(svr.k1),
+                        'k2': util.bytes_to_bigint(svr.k2),
+                    })
+            self._sbb.post_one_election_outcome_proof(list_idx, svrs)
+        self._sbb.post_end_section()
 
     #
     # Proof server mixing implementation
@@ -212,7 +229,7 @@ class ProofServer:
 
         # Post lists of votes - last column creates and posts SVR commitments for
         # each value in the array of ballot components it contains.
-        com_t: List[Dict[int, Dict[str, int]]] = [{} for _ in range(self._num_votes)]
+        com_t: List[List[Dict[str, int]]] = [[] for _ in range(self._num_votes)]
         round_commitments: List[List[sv_vote.PlaintextSVR]] = []
         for row in range(self._rows):
             commitment_array: List[sv_vote.PlaintextSVR] = []
@@ -221,7 +238,7 @@ class ProofServer:
                 commitment_array.append(svr)
                 com_u = util.get_COM(svr.k1, svr.u)
                 com_v = util.get_COM(svr.k2, svr.v)
-                com_t[i][row] = {'com_u': com_u, 'com_v': com_v}
+                com_t[i].append({'com_u': com_u, 'com_v': com_v})
 
             round_commitments.append(commitment_array)
 
@@ -237,6 +254,8 @@ class ProofServer:
         2m lists posted to the SBB.
         """
         self._validate_stored_votes()
+
+        self._sbb.post_start_mixnet_output_list()
 
         for _ in range(self._twoM):
             self._mix_round()

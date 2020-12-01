@@ -1,18 +1,19 @@
+from dataclasses import dataclass
 from typing import Optional
 
 from cryptography.fernet import Fernet
 
 
+@dataclass
 class PlaintextSVR:
     """
     PlaintextSVR represents one SVR tuple (u, v) and the keys
     encryption keys used to make a commitment to this SVR.
     """
-    def __init__(self, k1: bytes, k2: bytes, u: bytes, v: bytes):
-        self.k1 = k1
-        self.k2 = k2
-        self.u = u
-        self.v = v
+    k1: bytes
+    k2: bytes
+    u: bytes
+    v: bytes
 
 
 class EncCom:

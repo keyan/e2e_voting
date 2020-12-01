@@ -246,6 +246,8 @@ class ProofServer:
         # Validation of PS state that we need to reconstruct original ballot
         # order and to open `m` commitments later.
         assert len(self._permutation_arrays) == self._twoM
-        assert len(self._permutation_arrays[0]) == self._num_votes
+        assert len(self._permutation_arrays[0]) == self._rows
+        assert len(self._permutation_arrays[0][0]) == self._num_votes
         assert len(self._commitment_arrays) == self._twoM
-        assert len(self._commitment_arrays[0]) == self._num_votes
+        assert len(self._commitment_arrays[0]) == self._rows
+        assert len(self._commitment_arrays[0][0]) == self._num_votes

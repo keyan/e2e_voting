@@ -8,11 +8,15 @@ from src import proof_server
 from src import verifier
 
 
+# Arbitrary large prime number
+DEFAULT_M = 235631359
+
+
 class Election:
     def __init__(
         self,
         num_voters: int,
-        M: int = 5,
+        M: int = DEFAULT_M,
         twoM: int = 24,
         num_tablets: int = 3,
         num_proof_srv_rows: int = 3,

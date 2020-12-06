@@ -118,6 +118,9 @@ class ProofServer:
         return back_tracked
     
     def _unmix_commitments(self):
+        """
+        This function unmixes all final outputs, but does NOT de-obfuscate any of them.
+        """
         commitment_arrays_unmixed = copy.deepcopy(self._commitment_arrays)
         for list_idx in range(self._twoM):
             for perm_array in reversed(self._permutation_arrays[list_idx]):
@@ -126,7 +129,7 @@ class ProofServer:
                     commitment_arrays_unmixed[list_idx][row] = un_mixed
         self._unmixed_commitment_arrays = commitment_arrays_unmixed
         
-    def publish_t_values(self):
+    def _publish_t_values(self):
         """
         This also publishes the t-values per section II E, where u2 and v2 are the SV components
         after obfuscation (in the mixing step) and u1 and v1 are the original components.
@@ -134,6 +137,8 @@ class ProofServer:
         This is part of step #7 from Section I and is briefly mentioned in Section IX
         under "Proving consistency with cast votes"
         """
+        self._sbb.post_start_tvalue_commitments()
+        
         t_values: List[List[List[Dict[str, int]]]]= []
         for list_idx in range(self._twoM):
             row_list = []
@@ -177,6 +182,8 @@ class ProofServer:
                             'k': util.bytes_to_bigint(svr.k1),
                             'u_init': util.bytes_to_bigint(self._initial_sv[row][vote_idx].u),
                             'k_init': util.bytes_to_bigint(self._initial_sv[row][vote_idx].k1),
+                            'u_fin': util.bytes_to_bigint(self._commitment_arrays[list_idx][row][vote_idx].u),
+                            'k_fin': util.bytes_to_bigint(self._commitment_arrays[list_idx][row][vote_idx].k1),
                         })
                     else:
                         svrs[vote_idx].append({
@@ -184,6 +191,8 @@ class ProofServer:
                             'k': util.bytes_to_bigint(svr.k2),
                             'v_init': util.bytes_to_bigint(self._initial_sv[row][vote_idx].v),
                             'k_init': util.bytes_to_bigint(self._initial_sv[row][vote_idx].k2),
+                            'v_fin': util.bytes_to_bigint(self._commitment_arrays[list_idx][row][vote_idx].v),
+                            'k_fin': util.bytes_to_bigint(self._commitment_arrays[list_idx][row][vote_idx].k2),
                         })
             self._sbb.post_consistency_proof(list_idx, svrs)
         self._sbb.consistency_proof_end()
@@ -357,8 +366,10 @@ class ProofServer:
 
         self._sbb.post_end_section()
         
+        # We unmix all commitments and publish t values because all t-values
+        # should be published prior to the getting a random challenge request.
         self._unmix_commitments()
-        self.publish_t_values()
+        self._publish_t_values()
 
         # Validation of PS state that we need to reconstruct original ballot
         # order and to open `m` commitments later.

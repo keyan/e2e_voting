@@ -24,27 +24,31 @@ class Verifier:
         """
         sbb_contents = self._sbb.get_sbb_contents()
         
-        #t_values = sbb_contents.t_values
-        consistency_proof = sbb_contents.consistency_proof
-        
-        for list_idx, proof in consistency_proof.items():
+        # First, validate the commitment consistency with the initial vote lists and final vote lists.
+        for list_idx, proof in sbb_contents.consistency_proof.items():
             for vote_idx in range(len(proof)):
-                # TODO: This is somewhat incorrect. We need to sum X, Y, and Z with (T) and return a T per vote, not per row? Maybe?
                 proved_sv = proof[vote_idx]
                 for row_idx, sv in enumerate(proved_sv):
-                    #t_val_uv = t_values[list_idx][row_idx][vote_idx]
-                    # TODO: where is the original vote SV?
+                    # Ensure that we are consistent with the initial and the final commitments
                     if sv.get('u', None) is not None:
-                        val = sv['u_init']
+                        val_init = sv['u_init']
+                        val_fin = sv['u_fin']
                         original_commitment = sbb_contents.svr_commitments[row_idx][vote_idx]['com_u']
+                        final_commitment = sbb_contents.vote_lists[list_idx][vote_idx][row_idx].com_u
                     else:
-                        val = sv['v_init']
+                        val_init = sv['v_init']
+                        val_fin = sv['v_fin']
                         original_commitment = sbb_contents.svr_commitments[row_idx][vote_idx]['com_v']
-                    #compare_val = util.val(t_val, val, self._M)
-                    key = sv['k_init']
-                    commitement = util.get_COM(util.bigint_to_bytes(key), util.bigint_to_bytes(val))
-                    #commitement = util.get_COM(key, util.bigint_to_bytes(val))
-                    assert commitement == original_commitment
+                        final_commitment = sbb_contents.vote_lists[list_idx][vote_idx][row_idx].com_v
+                    key_init = sv['k_init']
+                    key_fin = sv['k_fin']
+                    
+                    com_init = util.get_COM(util.bigint_to_bytes(key_init), util.bigint_to_bytes(val_init))
+                    com_fin = util.get_COM(util.bigint_to_bytes(key_fin), util.bigint_to_bytes(val_fin))
+                    if com_init != original_commitment:
+                        raise Exception("Failed to open the initial vote commitment")
+                    if com_fin != final_commitment:
+                        raise Exception("Failed to open the final vote commitment")
             
         # TODO
         # Parse SBB

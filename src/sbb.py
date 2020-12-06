@@ -43,9 +43,17 @@ class SBBContents:
         # the vote was sent to, where each nested list is n-sized, containing 'com_u' and 'com_v' vals.
         self.svr_commitments: List[List[Dict[str, int]]] = []
         
-        # TODO: Clean this up
-        self.t_values: Any = []
-        self.consistency_proof = {}
+        # T values are 3 nested lists, where the first index is of size 2m, the next index has
+        # size of server rows, and the last index has size n (number of votes). Each nested dict
+        # contains a values 'tu' and 'tv' corresponding to the (t, -t) for that list/server row/vote
+        self.t_values: List[List[List[Dict[str, int]]]] = []
+        
+        # This contains the consistency proof. Each item has values u or v and an optional subscript.
+        # The items with _init subscript are for opening vote commitments. Similarly to _init, there
+        # are values with _fin subscript for final vote output checking. The values without it are for
+        # checking t-values consistency. The first dict key is the list index, followed by the
+        # vote index, and then the server row index.
+        self.consistency_proof: Dict[int, List[List[Dict[str, int]]]] = {}
 
     def get_bid_receipt(self, bid: int) -> str:
         """
@@ -142,9 +150,8 @@ class SBB:
         """
         Called once for each of the m lists which have all SVR commitments opened publicly.
         """
-        # TODO: DO THIS!
-        self.t_values = t_values
-        #self._db.write(json.dumps({'list_idx': list_idx, 'svrs': svrs}) + '\n')
+        self._db.write(json.dumps(t_values) + '\n')
+        self.post_end_section()
         
     def post_start_consistency_proof(self) -> None:
         """
@@ -239,7 +246,14 @@ class SBB:
                 )
             elif heading == CONSISTENCY_PROOF:
                 while line != END_SECTION:
-                    sbb_contents.consistency_proof = json.loads(line)
+                    consistency_proof = json.loads(line)
+                    for k, v in consistency_proof.items():
+                        sbb_contents.consistency_proof[int(k)] = v
+                    i += 1
+                    line = lines[i]
+            elif heading == T_VALUE_COMMITMENT_LIST:
+                while line != END_SECTION:
+                    sbb_contents.t_values = json.loads(line)
                     i += 1
                     line = lines[i]
             elif heading == ELECTION_OUTCOME:
@@ -271,5 +285,5 @@ class SBB:
                 pass
 
         # TODO: Clean this up
-        sbb_contents.t_values = self.t_values
+        #sbb_contents.t_values = self.t_values
         return sbb_contents

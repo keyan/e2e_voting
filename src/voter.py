@@ -6,6 +6,9 @@ from src.sbb import SBBContents
 from src.sv_vote import SVVote
 
 
+DEFAULT_NUM_CANDIDATES = 2
+
+
 class Voter:
     def __init__(self, voter_id: int, M: int, vote: Optional[int] = None):
         self.voter_id: int = voter_id
@@ -16,7 +19,7 @@ class Voter:
 
     def do_vote(self, tablet: Tablet):
         if self.vote is None or self.vote >= self.M:
-            self.vote = random.choice(range(self.M))
+            self.vote = random.choice(range(DEFAULT_NUM_CANDIDATES))
 
         print(f'Voter ID: {self.voter_id}, vote is: {self.vote}')
 

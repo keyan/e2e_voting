@@ -95,3 +95,7 @@ def get_COM(K: bytes, u: bytes) -> int:
 
 def val(u: int, v: int, M: int) -> int:
     return (u + v) % M
+
+
+def t_val(u1: bytes, u2: bytes, M: int) -> int:
+    return (bytes_to_bigint(u2) - bytes_to_bigint(u1)) % M

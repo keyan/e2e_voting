@@ -22,6 +22,30 @@ class Verifier:
         the "Proving Equality of Arrays of Vote Values" procedure described
         in Section II-F.
         """
+        sbb_contents = self._sbb.get_sbb_contents()
+        
+        #t_values = sbb_contents.t_values
+        consistency_proof = sbb_contents.consistency_proof
+        
+        for list_idx, proof in consistency_proof.items():
+            for vote_idx in range(len(proof)):
+                # TODO: This is somewhat incorrect. We need to sum X, Y, and Z with (T) and return a T per vote, not per row? Maybe?
+                proved_sv = proof[vote_idx]
+                for row_idx, sv in enumerate(proved_sv):
+                    #t_val_uv = t_values[list_idx][row_idx][vote_idx]
+                    # TODO: where is the original vote SV?
+                    if sv.get('u', None) is not None:
+                        val = sv['u_init']
+                        original_commitment = sbb_contents.svr_commitments[row_idx][vote_idx]['com_u']
+                    else:
+                        val = sv['v_init']
+                        original_commitment = sbb_contents.svr_commitments[row_idx][vote_idx]['com_v']
+                    #compare_val = util.val(t_val, val, self._M)
+                    key = sv['k_init']
+                    commitement = util.get_COM(util.bigint_to_bytes(key), util.bigint_to_bytes(val))
+                    #commitement = util.get_COM(key, util.bigint_to_bytes(val))
+                    assert commitement == original_commitment
+            
         # TODO
         # Parse SBB
         # Use (t, -t) and prior commitments posted to verify

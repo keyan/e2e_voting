@@ -1,5 +1,6 @@
+import copy
 import random
-from typing import Dict, List, Set, Tuple
+from typing import Any, Dict, List, Set, Tuple
 
 from src import sv_vote
 from src import sbb
@@ -33,6 +34,12 @@ class ProofServer:
 
         # Only set after mixing is initiated.
         self._num_votes: int = 0
+        
+        # Keeps the original split-value representations of votes per server row.
+        # This is later used for computing t-values.
+        #   - list[i] contains the SV for all votes in server row i
+        #   - list[i][j] contains the plaintext SVR for vote j
+        self._initial_sv: List[List[sv_vote.PlaintextSVR]] = []
 
         # Keep state for each permutation array used for each column in each
         # iteration of mixing (2m total iterations). This is used to recompute
@@ -49,6 +56,9 @@ class ProofServer:
         #   - list[i] contains the commitments used during round i of mixing
         #   - list[i][j] " " for the last column of the j'th row
         self._commitment_arrays: List[List[List[sv_vote.PlaintextSVR]]] = []
+        
+        # Same as commitment arrays, except backtracked to unmix
+        self._unmixed_commitment_arrays: List[List[List[sv_vote.PlaintextSVR]]] = []
 
     def _generate_key_pair(self):
         """
@@ -100,12 +110,83 @@ class ProofServer:
         if sv_vote.proof_server_row is None:
             raise Exception('Cannot handle vote without valid proof_server_row')
         self._incoming_vote_rows[sv_vote.proof_server_row].append(sv_vote)
-
-    def publish_vote_consistency_proof(self, proof_lists: Set[int]) -> None:
+        
+    def _reverse_permutation(self, permutation: List[int], values: List[Any]):
+        back_tracked: List[Any] = [None for _ in values]
+        for i, val in enumerate(values):
+            back_tracked[permutation[i]] = val
+        return back_tracked
+    
+    def _unmix_commitments(self):
+        commitment_arrays_unmixed = copy.deepcopy(self._commitment_arrays)
+        for list_idx in range(self._twoM):
+            for perm_array in reversed(self._permutation_arrays[list_idx]):
+                for row, row_svrs in enumerate(commitment_arrays_unmixed[list_idx]):
+                    un_mixed = self._reverse_permutation(perm_array, row_svrs)
+                    commitment_arrays_unmixed[list_idx][row] = un_mixed
+        self._unmixed_commitment_arrays = commitment_arrays_unmixed
+        
+    def publish_t_values(self):
         """
+        This also publishes the t-values per section II E, where u2 and v2 are the SV components
+        after obfuscation (in the mixing step) and u1 and v1 are the original components.
+        
+        This is part of step #7 from Section I and is briefly mentioned in Section IX
+        under "Proving consistency with cast votes"
+        """
+        t_values: List[List[List[Dict[str, int]]]]= []
+        for list_idx in range(self._twoM):
+            row_list = []
+            for row, final_svrs in enumerate(self._unmixed_commitment_arrays[list_idx]):
+                vote_list = []
+                initial_svrs = self._initial_sv[row]
+                assert len(initial_svrs) == len(final_svrs)
+                for vote_idx in range(len(initial_svrs)):
+                    initial_sv = initial_svrs[vote_idx]
+                    final_sv = final_svrs[vote_idx]
+                    tu = util.t_val(initial_sv.u, final_sv.u, self._M)
+                    tv = util.t_val(initial_sv.v, final_sv.v, self._M)
+                    vote_list.append({'tu': tu, 'tv': tv})
+                row_list.append(vote_list)
+            t_values.append(row_list)
+        self._sbb.post_tvalue_commitments(t_values)
+            
+    def publish_vote_consistency_proof(self, proof_lists: Set[int], select_u_v: List[int]) -> None:
+        """
+        Publishes the arrays in the order of ballots received, by backtracking the permutation.
+        The select_u_v list is the same size as number of votes, and determines whether the "u"
+        or the "v" component is opened and returned.
+        
         Step #7 from Section I.
         """
-        pass
+        self._sbb.post_start_consistency_proof()
+        
+        list_indices = sorted(list(proof_lists))
+        for list_idx in list_indices:
+            svrs: List[List[Dict[str, int]]] = [[] for _ in range(self._num_votes)]
+            for row, row_svrs in enumerate(self._unmixed_commitment_arrays[list_idx]):
+                for vote_idx, svr in enumerate(row_svrs):
+                    # From the paper: "Now the randomness is used to open one coordinate in each
+                    # of the commitments in the posted concealed ballots and the
+                    # corresponding commitment in each of the m rearranged arrays."
+                    # This means that we post the initial ballot u/v and k, and the obfuscated
+                    # u/v and k (that corresponds to the same ballot.)
+                    if select_u_v[vote_idx] == 0:
+                        svrs[vote_idx].append({
+                            'u': util.bytes_to_bigint(svr.u),
+                            'k': util.bytes_to_bigint(svr.k1),
+                            'u_init': util.bytes_to_bigint(self._initial_sv[row][vote_idx].u),
+                            'k_init': util.bytes_to_bigint(self._initial_sv[row][vote_idx].k1),
+                        })
+                    else:
+                        svrs[vote_idx].append({
+                            'v': util.bytes_to_bigint(svr.v),
+                            'k': util.bytes_to_bigint(svr.k2),
+                            'v_init': util.bytes_to_bigint(self._initial_sv[row][vote_idx].v),
+                            'k_init': util.bytes_to_bigint(self._initial_sv[row][vote_idx].k2),
+                        })
+            self._sbb.post_consistency_proof(list_idx, svrs)
+        self._sbb.consistency_proof_end()
 
     def publish_election_outcome(self, outcome_lists: Set[int]) -> None:
         """
@@ -171,6 +252,7 @@ class ProofServer:
             # One int per vote, at the end this is e.g. (x_1, ..., x_n).
             vote_components: List[int] = []
             votes = self._incoming_vote_rows[row]
+            initial_svr: List[sv_vote.PlaintextSVR] = []
 
             for vote in votes:
                 decoder = self._tablet_decoders[vote.tablet_id]
@@ -184,12 +266,21 @@ class ProofServer:
                     util.bytes_to_bigint(plaintext_svr.v),
                     self._M,
                 )
+                
                 vote_components.append(component_value)
+                
+                # We technically do not need the keys here, but keeping them for simplicity.
+                initial_svr.append(plaintext_svr)
 
             assert len(vote_components) == self._num_votes
+            
+            # We only need to do this one time, since this will be the same for every iteration
+            if len(self._initial_sv) < self._rows:
+                self._initial_sv.append(initial_svr)
             row_values.append(vote_components)
 
-        # Obfuscation and shuffling - done once per column.
+        # Obfuscation and shuffling - done once per column. Column here is only conceptual,
+        # whereas in a real implementation, the data would be sent across servers.
         for col in range(self._rows):
             # Row 0 generates both obfuscation tuples (explained below) and a
             # random permutation for shuffling, these lists are shared with the
@@ -210,7 +301,7 @@ class ProofServer:
             ]
 
             # Create one list for each component (p, q, r) so they can be shared
-            # with the appropriate row.
+            # with the appropriate row. obfuscation_lists has dimensions (_rows, _num_votes)
             obfuscation_lists = list(zip(*obfuscation_tuples))
 
             for row in range(self._rows):
@@ -224,6 +315,10 @@ class ProofServer:
                 # This reassignment takes the place of secure server transfer, instead
                 # the latest component values states are kept in this list.
                 row_values[row][:] = [obfuscated_components[i] for i in pi]
+                
+                # Insert a reverse permutation test here as a sanity check
+                unshuffled = self._reverse_permutation(pi, row_values[row])
+                assert unshuffled == obfuscated_components
 
         self._permutation_arrays.append(permutation_arrays)
 
@@ -261,6 +356,9 @@ class ProofServer:
             self._mix_round()
 
         self._sbb.post_end_section()
+        
+        self._unmix_commitments()
+        self.publish_t_values()
 
         # Validation of PS state that we need to reconstruct original ballot
         # order and to open `m` commitments later.

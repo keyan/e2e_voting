@@ -72,7 +72,7 @@ class SBB:
         self._ballot_receipts: List[str] = []
         self._svr_commitments: List[List[Dict[str, int]]] = []
         self._db: TextIO = open(FILENAME, 'w')
-        self.consistency_proof = {}
+        self.consistency_proof: Dict[int, List[List[Dict[str, int]]]] = {}
 
     def close(self) -> None:
         self._db.close()

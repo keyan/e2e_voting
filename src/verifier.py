@@ -66,8 +66,8 @@ class Verifier:
                     tv_list.append(sbb_contents.t_values[list_idx][row_idx][vote_idx]['tv'])
                 
                 # Check that tu_list and tv_list lagrange to (t, -t)
-                tu_list = list(enumerate(tu_list, 1))
-                tv_list = list(enumerate(tv_list, 1))
+                tu_list = [enumerate(tu_list, 1)]
+                tv_list = [enumerate(tv_list, 1)]
                 rows = len(proved_sv)
                 tu0 = self._lagrange(tu_list, rows, rows-1, self._M)
                 tv0 = self._lagrange(tv_list, rows, rows-1, self._M)

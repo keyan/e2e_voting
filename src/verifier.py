@@ -66,8 +66,6 @@ class Verifier:
                     tv_list.append(sbb_contents.t_values[list_idx][row_idx][vote_idx]['tv'])
                 
                 # Check that tu_list and tv_list lagrange to (t, -t)
-                tu_list = [(x,y) for x, y in enumerate(tu_list, 1)]
-                tv_list = [(x,y) for x, y in enumerate(tv_list, 1)]
                 rows = len(proved_sv)
                 tu0 = self._lagrange(tu_list, rows, rows-1, self._M)
                 tv0 = self._lagrange(tv_list, rows, rows-1, self._M)
@@ -97,8 +95,11 @@ class Verifier:
         assert len(share_list) >= t
         if len(share_list) > t:
             share_list = share_list[:t]
-        x = [xy[0] for xy in share_list]
-        y = [xy[1] for xy in share_list]
+            
+        # Enumerate the shared list
+        share_list_enum = [(x,y) for x, y in enumerate(share_list, 1)]
+        x = [xy[0] for xy in share_list_enum]
+        y = [xy[1] for xy in share_list_enum]
         secret = 0
         for i in range(t):
             numerator = 1

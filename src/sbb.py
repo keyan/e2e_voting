@@ -70,7 +70,7 @@ class SBB:
         self._num_voters: int = num_voters
         self._twoM: int = twoM
         self._ballot_receipts: List[str] = []
-        self._svr_commitments: List[List[Any]] = []
+        self._svr_commitments: List[List[Dict[str, int]]] = []
         self._db: TextIO = open(FILENAME, 'w')
         self.consistency_proof = {}
 
@@ -107,9 +107,6 @@ class SBB:
         self.post_end_section()
 
         self._db.write(ORIGINAL_ORDER_COMMITMENTS + '\n')
-        # TODO: fix this
-        #for com in self._svr_commitments:
-        #    self._db.write(com + '\n')
         self._db.write(json.dumps(self._svr_commitments) + '\n')
         self.post_end_section()
 
@@ -281,6 +278,4 @@ class SBB:
                 # raise Exception('Unexpected SBB content')
                 pass
 
-        # TODO: Clean this up
-        #sbb_contents.t_values = self.t_values
         return sbb_contents

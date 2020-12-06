@@ -275,10 +275,7 @@ class ProofServer:
                     util.bytes_to_bigint(plaintext_svr.v),
                     self._M,
                 )
-                
                 vote_components.append(component_value)
-                
-                # We technically do not need the keys here, but keeping them for simplicity.
                 initial_svr.append(plaintext_svr)
 
             assert len(vote_components) == self._num_votes

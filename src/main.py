@@ -32,6 +32,4 @@ if __name__ == '__main__':
     if parsed.interactive:
         print('Interactive mode not implemented yet')
     else:
-        # TODO: Remove!!
-        election.Election(num_voters=parsed.num_voters, twoM=4).run()
-        #election.Election(num_voters=parsed.num_voters).run()
+        election.Election(num_voters=parsed.num_voters).run()

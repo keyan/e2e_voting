@@ -50,9 +50,7 @@ class Verifier:
                     if com_fin != final_commitment:
                         raise Exception("Failed to open the final vote commitment")
             
-        # TODO
-        # Parse SBB
-        # Use (t, -t) and prior commitments posted to verify
+        # TODO: Use (t, -t) and prior commitments posted to verify consistency via lagrange
         return True
 
     def tally_and_verify_election_outcome(self, outcome_lists: Set[int]) -> typing.Counter[int]:

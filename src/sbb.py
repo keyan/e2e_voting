@@ -72,9 +72,6 @@ class SBB:
         self._ballot_receipts: List[str] = []
         self._svr_commitments: List[List[Any]] = []
         self._db: TextIO = open(FILENAME, 'w')
-        # TODO: Remove!!
-        self.ordered_commitments = []
-        self.t_values = []
         self.consistency_proof = {}
 
     def close(self) -> None:
@@ -122,7 +119,7 @@ class SBB:
 
     def post_start_mixnet_output_list(self) -> None:
         """
-        Called once by tthe PS prior to starting o post mixnet output lists,
+        Called once by the PS prior to starting to post mixnet output lists,
         of which there are 2m in total.
         """
         self._db.write(MIXNET_VOTE_COMMITMENT_LIST + '\n')

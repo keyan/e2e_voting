@@ -8,11 +8,15 @@ from src import proof_server
 from src import verifier
 
 
+# Arbitrary large prime number
+DEFAULT_M = 235631359
+
+
 class Election:
     def __init__(
         self,
         num_voters: int,
-        M: int = 5,
+        M: int = DEFAULT_M,
         twoM: int = 24,
         num_tablets: int = 3,
         num_proof_srv_rows: int = 3,
@@ -94,17 +98,20 @@ class Election:
         # Step 6
         # Create a random challenge specifying which `m` lists to use for proving
         # consistency and (implicitly) which `m` votes to use for posting the
-        # election outcome.
+        # election outcome. We also need to create a random binary list that selects
+        # between u and v for the consistency proof.
         print('Creating random challenge...')
         all_two_m = set(range(self.twoM))
         proof_lists: Set[int] = set(random.sample(all_two_m, self.twoM // 2))
         outcome_lists: Set[int] = all_two_m - proof_lists
         assert len(proof_lists) == len(outcome_lists) == self.twoM // 2
+        u_v_selection: List[int] = [random.randrange(2) for _ in self.voters]
+        assert len(u_v_selection) == len(self.voters)
 
         # Step 7
         # Tell PS which lists to un-shuffle, partially decrypt, and post to the SBB.
         print('Publishing consistency proof...')
-        self.proof_server.publish_vote_consistency_proof(proof_lists)
+        self.proof_server.publish_vote_consistency_proof(proof_lists, u_v_selection)
         # A unrelated verifier server should be able to read the SBB and verify the
         # proof that the partially decrypted votes are eqivalent to the SBB published
         # cast votes from Step 3.

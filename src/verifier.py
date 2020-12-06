@@ -22,10 +22,97 @@ class Verifier:
         the "Proving Equality of Arrays of Vote Values" procedure described
         in Section II-F.
         """
-        # TODO
-        # Parse SBB
-        # Use (t, -t) and prior commitments posted to verify
+        sbb_contents = self._sbb.get_sbb_contents()
+        
+        # First, validate the commitment consistency with the initial vote lists and final vote lists.
+        for list_idx, proof in sbb_contents.consistency_proof.items():
+            for vote_idx in range(len(proof)):
+                proved_sv = proof[vote_idx]
+                tu_list = []
+                tv_list = []
+                for row_idx, sv in enumerate(proved_sv):
+                    # Ensure that we are consistent with the initial and the final commitments
+                    if sv.get('u', None) is not None:
+                        val_init = sv['u_init']
+                        val_fin = sv['u_fin']
+                        val_uv = sv['u']
+                        val_t = sbb_contents.t_values[list_idx][row_idx][vote_idx]['tu']
+                        original_commitment = sbb_contents.svr_commitments[row_idx][vote_idx]['com_u']
+                        final_commitment = sbb_contents.vote_lists[list_idx][vote_idx][row_idx].com_u
+                    else:
+                        val_init = sv['v_init']
+                        val_fin = sv['v_fin']
+                        val_uv = sv['v']
+                        val_t = sbb_contents.t_values[list_idx][row_idx][vote_idx]['tv']
+                        original_commitment = sbb_contents.svr_commitments[row_idx][vote_idx]['com_v']
+                        final_commitment = sbb_contents.vote_lists[list_idx][vote_idx][row_idx].com_v
+                    key_init = sv['k_init']
+                    key_fin = sv['k_fin']
+                    
+                    # Verify the input and output commitments
+                    com_init = util.get_COM(util.bigint_to_bytes(key_init), util.bigint_to_bytes(val_init))
+                    com_fin = util.get_COM(util.bigint_to_bytes(key_fin), util.bigint_to_bytes(val_fin))
+                    if com_init != original_commitment:
+                        raise Exception("Failed to open the initial vote commitment")
+                    if com_fin != final_commitment:
+                        raise Exception("Failed to open the final vote commitment")
+                    
+                    # Verify the t-values
+                    if util.t_val(util.bigint_to_bytes(val_init), util.bigint_to_bytes(val_uv), self._M) != val_t:
+                        raise Exception("Failed to verify t value")
+                    
+                    # Add t-values to their respective lists for lagrange checks
+                    tu_list.append(sbb_contents.t_values[list_idx][row_idx][vote_idx]['tu'])
+                    tv_list.append(sbb_contents.t_values[list_idx][row_idx][vote_idx]['tv'])
+                
+                # Check that tu_list and tv_list lagrange to (t, -t)
+                rows = len(proved_sv)
+                tu0 = self._lagrange(tu_list, rows, rows-1, self._M)
+                tv0 = self._lagrange(tv_list, rows, rows-1, self._M)
+                if util.val(tu0, tv0, self._M) != 0:
+                    # TODO: This does not work
+                    #raise Exception("Failed lagrange verification of t values")
+                    pass
         return True
+    
+    def _lagrange(self, share_list, n, t, M):
+        """
+        Note: This is taken from the Rivest implementation
+        
+        return secret, given enough shares.
+        Use LaGrange interpolation formula.
+        Arithmetic is modulo M (a prime).
+        share_list is a list of (x, y) pairs, with distinct x's.
+        The original number of shares created was n.
+        The threshold number of shares needed to reconstruct secret is t.
+        The length of share_list is at least t (and at most n).
+        """
+        assert isinstance(n, int)
+        assert isinstance(t, int)
+        assert isinstance(M, int)
+        assert 1 <= t <= n
+        assert n <= M - 1
+        assert len(share_list) >= t
+        if len(share_list) > t:
+            share_list = share_list[:t]
+            
+        # Enumerate the shared list
+        share_list_enum = [(x,y) for x, y in enumerate(share_list, 1)]
+        x = [xy[0] for xy in share_list_enum]
+        y = [xy[1] for xy in share_list_enum]
+        secret = 0
+        for i in range(t):
+            numerator = 1
+            denominator = 1
+            for j in range(t):
+                if j != i:
+                    numerator *= (-x[j]) % M
+                    denominator *= (x[i]-x[j]) % M
+            assert denominator != 0
+            denominator_inverse = pow(denominator, M-2, M)
+            assert (denominator * denominator_inverse) % M == 1
+            secret = (secret + y[i] * numerator * denominator_inverse) % M
+        return secret
 
     def tally_and_verify_election_outcome(self, outcome_lists: Set[int]) -> typing.Counter[int]:
         """

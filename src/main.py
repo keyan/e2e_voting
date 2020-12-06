@@ -19,7 +19,7 @@ def parse_cmd_line(args):
         '-v', '--voters',
         action='store',
         dest='num_voters',
-        default=10,
+        default=999,
         type=int,
         help='number of voters to use, set randomly if not specified',
     )

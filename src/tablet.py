@@ -85,7 +85,7 @@ class Tablet:
             vote.com_v = util.get_COM(plaintext_svr.k2, plaintext_svr.v)
 
             # Each commitment for each component of the ballot must be posted to SBB.
-            self._sbb.add_ballot_svr_commitment(vote.com_u, vote.com_v)
+            self._sbb.add_ballot_svr_commitment(row, vote.com_u, vote.com_v)
 
             # Store the commitments in the receipt. Need to use int for it to be json serializable
             receipt[row] = {'u': vote.com_u, 'v': vote.com_v}

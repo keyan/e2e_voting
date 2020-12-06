@@ -13,14 +13,12 @@ pip install -r requirements.txt
 
 ```
 ⫸ python3 -m src.main  --help
-usage: main.py [-h] [-i] [-v NUM_VOTERS]
+usage: main.py [-h] [-v NUM_VOTERS]
 
 Run simulated electronic elections
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i, --interactive     start simulation in interactive mode, allowing user
-                        control of some election parameters like voting
   -v NUM_VOTERS, --voters NUM_VOTERS
                         number of voters to use, set randomly if not specified
 ```
@@ -29,7 +27,4 @@ For example:
 ```
 # Automated simulation mode
 make run
-
-# Interactive mode
-python3 -m src.main -i
 ```

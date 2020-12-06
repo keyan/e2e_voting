@@ -21,7 +21,7 @@ We present a brief overview of the motivation for and goals of secure electronic
 \section{Introduction}
 Despite the rapid digitalization of life, most voting systems remain quaintly stuck using dated methods of paper recording and machine-assisted human tabulation. Though attempts have been made in the United States to transition to voting machines and electronic tablets (Direct-Recording Electronics [DRE]), these tools still ultimately rely on the same paper record and manual tallying procedures as a source of truth \cite{ncsl}. These systems do not allow members of the public to personally verify their vote was indeed counted and not manipulated, nor do they allow for a verification of the election outcome itself. As we have seen just this year, these deficiencies pose a serious risk towards maintaining public trust in elections and we will be so bold as to say this puts democracy itself at risk.
 
-The goal of End-to-End Verifiable Voting (E2EVV) systems are to provide an alternative which achieves the following  generally agreed upon requirements \cite{mit}:
+The goal of End-to-End Verifiable Voting (E2EVV) systems are to provide an alternative which achieves the following generally agreed upon requirements \cite{mit}:
 \begin{enumerate}
 \item
     Individual voters can verify their vote but cannot prove what they voted for (to prevent coercion)
@@ -50,7 +50,7 @@ The overall protocol can be broken up into the below steps, note that the Secure
 \item
     Verification of Postings - Voters can use the SBB to verify their vote was posted.
 \item \label{steps:mix}
-    Mixing - Votes are obfuscated and shuffled, then posted to the SBB. $2m$ different obfuscations/permutations of the original vote list of posted.
+    Mixing - Votes are obfuscated and shuffled, then posted to the SBB. $2m$ different obfuscations/permutations of the original vote list submission order.
 \item \label{steps:proof}
     Proving vote consistency - $m$ out of the total $2m$ lists in step \ref{steps:mix} are partially decrypted in order to allow universal verifiablility of mixing results.
 \item \label{steps:outcome}
@@ -78,7 +78,7 @@ such that
     x = \mathit{VAL}(X) = (u + v) \mbox{ mod } M
 \end{equation}
 
-This idea is then extended so that $x$ can be represented with a n-tuple of such vectors. The Proof Server has a configurable number of rows allowed, this row size determines the number of ways each vote is split again. In our example network in Fig. \ref{fig:arch_diagram}, the row size is $3$ so now we would represent the vote $x$ as the vector $(X, Y, Z)$
+This idea is then extended so that $x$ can be represented with a n-tuple of such vectors. The Proof Server has a configurable number of rows allowed; this row size determines the number of ways each vote is split again. In our example network in Fig. \ref{fig:arch_diagram}, the row size is $3$ so now we would represent the vote $x$ as the vector $(X, Y, Z)$
 \begin{equation} \label{eq:comt}
     x = \mathit{VAL}(X) + \mathit{VAL}(Y) + \mathit{VAL}(Z) (\mbox{mod } M)
 \end{equation}
@@ -105,6 +105,8 @@ We do not explain specifics of our code here, as it mostly matches the protocol 
     Our simulation runs entirely on one machine and one process, while the system in practice would be constructed of multiple physical Tablets, Mix Servers, and a SBB. We use unique class instances to represent each of these entities.
 \item
     Related to \ref{sim:process}, the Proof Server is not a collection of servers. Instead we chose to represent the Proof Server as a singleton instance which has a 2D matrix representing the mix-net topology. Rather than Mix Servers using secure communication to pass data during mixing, we pass data freely using instance variables.
+\item
+    Rather than use secure encrypted communication between Tablet devices and the Proof Server, we simplify message passing by not encrypting the overall payload. The Tablets and Proof Server still engaging in public key exchange, and split value representations of votes are encrypted with symmetric encryption (using HMAC), but the overall payload is sent as plaintext JSON.
 \item
     Related to \ref{sim:process}, the SBB is represented as a flat file on disk. Each election entity writes to this file during the election.
 \end{enumerate}

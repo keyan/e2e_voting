@@ -8,6 +8,10 @@ __pycache__
 .*.swp
 .idea/
 venv/
+*.aux
+*.log
+*.out
+.DS_Store
 
 # May want to include this at some point as an example.
 sbb.txt

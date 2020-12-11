@@ -2,6 +2,10 @@
 
 A limited implementation of Rabin and Rivest end-to-end verifiable electronic voting as described in [their paper](https://people.csail.mit.edu/rivest/pubs/RR14b.pdf).
 
+The high level system architecture looks like:
+
+<img src="https://raw.githubusercontent.com/keyan/e2e_voting/master/paper/figures/arch_diagram.png" alt="arch" width=80%/>
+
 ## Requirements
 
 Install necessary packages in a virtualenv:
